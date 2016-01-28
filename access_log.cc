@@ -9,7 +9,7 @@
 namespace logfs_fuse {
 
 AccessLog::AccessLog(const std::string& log_path) : fd_(0) {
-  fd_ = open(log_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC);
+  fd_ = open(log_path.c_str(), O_WRONLY | O_CREAT | O_APPEND);
   LOG_IF(FATAL, fd_ == 0) << "Failed to open access log '" << log_path
                           << "' for write, [" << errno
                           << "] : " << strerror(errno);

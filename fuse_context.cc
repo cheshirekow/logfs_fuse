@@ -365,6 +365,11 @@ int FuseContext::readlink(const char* path, char* buf, size_t bufsize) {
     return -errno;
   }
 
+  // NOTE(josh): readlink does not put in a null byte
+  if (result < bufsize) {
+    buf[result] = '\0';
+  }
+
   return 0;
 }
 
