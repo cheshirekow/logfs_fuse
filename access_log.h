@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace logfs_fuse {
@@ -12,6 +13,7 @@ class AccessLog {
 
  private:
   int fd_;
+  int64_t ms_of_last_flush_;
 };
 
 }  // namespace logfs_fuse
