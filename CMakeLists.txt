@@ -15,7 +15,9 @@ foreach(clang_version ${clang_versions})
   list(APPEND clang_format_names clang-format-${clang_version})
 endforeach()
 
-find_program(clang_format NAMES ${clang_format_names})
+find_program(clang_format_exe NAMES ${clang_format_names})
+find_program(autopep8_exe autopep8)
+find_program(pylint_exe pylint)
 
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 add_definitions(-D_FILE_OFFSET_BITS=64)
@@ -36,13 +38,29 @@ target_link_libraries(logfs_fuse
   ${gflags_LDFLAGS}
   ${glog_LDFLAGS})
 
+file(GLOB python_files tools/*.py)
+
 if(PYTHONINTERP_FOUND)
   set(cpplint ${CMAKE_CURRENT_SOURCE_DIR}/cpplint.py)
-  add_custom_target(lint
-    COMMAND ${PYTHON_EXECUTABLE} ${cpplint} ${logfs_fuse_sources})
+  set(lint_commands
+      COMMAND ${PYTHON_EXECUTABLE} ${cpplint} ${logfs_fuse_sources})
+  if(pylint_exe)
+    #list(APPEND lint_commands COMMAND ${pylint_exe} ${python_files})
+  endif()
+  add_custom_target(lint ALL ${lint_commands})
 endif()
 
-if(clang_format)
-  add_custom_target(format
-    COMMAND ${clang_format} -i -style=File ${logfs_fuse_sources})
+set(format_commands)
+if(clang_format_exe)
+  list(APPEND format_commands
+       COMMAND ${clang_format_exe} -i -style=File ${logfs_fuse_sources})
+endif()
+
+if(autopep8_exe)
+  list(APPEND format_commands
+       COMMAND ${autopep8_exe} -i --indent-size 2 ${python_files})
+endif()
+
+if(format_commands)
+  add_custom_target(format ${format_commands})
 endif()
