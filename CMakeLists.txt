@@ -40,27 +40,34 @@ target_link_libraries(logfs_fuse
 
 file(GLOB python_files tools/*.py)
 
+add_custom_target(lint ALL)
 if(PYTHONINTERP_FOUND)
   set(cpplint ${CMAKE_CURRENT_SOURCE_DIR}/cpplint.py)
-  set(lint_commands
+
+  add_custom_target(cpp_lint
       COMMAND ${PYTHON_EXECUTABLE} ${cpplint} ${logfs_fuse_sources})
+  add_dependencies(lint cpp_lint)
+
   if(pylint_exe)
-    #list(APPEND lint_commands COMMAND ${pylint_exe} ${python_files})
+    add_custom_target(py_lint
+                      COMMAND ${pylint_exe}
+                      --rcfile ${CMAKE_CURRENT_SOURCE_DIR}/tools/pylintrc.txt
+                      ${python_files})
+    add_dependencies(lint py_lint)
   endif()
-  add_custom_target(lint ALL ${lint_commands})
 endif()
 
-set(format_commands)
+
+add_custom_target(format)
 if(clang_format_exe)
-  list(APPEND format_commands
-       COMMAND ${clang_format_exe} -i -style=File ${logfs_fuse_sources})
+  add_custom_target(cpp_format
+                    COMMAND ${clang_format_exe} -i -style=File
+                    ${logfs_fuse_sources})
+  add_dependencies(format cpp_format)
 endif()
 
 if(autopep8_exe)
-  list(APPEND format_commands
-       COMMAND ${autopep8_exe} -i --indent-size 2 ${python_files})
-endif()
-
-if(format_commands)
-  add_custom_target(format ${format_commands})
+  add_custom_target(py_format
+                    COMMAND ${autopep8_exe} -i --indent-size 2 ${python_files})
+  add_dependencies(format py_format)
 endif()
