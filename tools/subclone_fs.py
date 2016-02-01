@@ -34,7 +34,12 @@ def copy_files(src_dir, dst_dir, infile):
     if not os.path.exists(dst_parent):
       os.makedirs(dst_parent)
 
-    if os.path.isfile(src_path):
+    if os.path.islink(src_path):
+      target = os.readlink(src_path)
+      if os.path.exists(dst_path):
+        os.remove(dst_path)
+      os.symlink(target, dst_path)
+    elif os.path.isfile(src_path):
       shutil.copyfile(src_path, dst_path)
     num_lines += 1
 
