@@ -3,6 +3,7 @@
    copy."""
 
 import argparse
+import errno
 import os
 import shutil
 import sys
@@ -15,6 +16,45 @@ def fmt_out(fmt_str, *args, **kwargs):
   sys.stdout.write(fmt_str.format(*args, **kwargs))
   sys.stdout.flush()
 
+
+def force_symlink(target, link_path):
+  """Force the creation of a symlink, removing the link path if it already
+     exists."""
+  try:
+    os.symlink(target, link_path)
+  except OSError, exception:
+    if exception.errno == errno.EEXIST:
+      os.remove(link_path)
+      os.symlink(target, link_path)
+
+def copy_path(src_path, dst_path):
+  """Copy a symlink or a file."""
+
+  dst_parent = os.path.dirname(dst_path)
+  if not os.path.exists(dst_parent):
+    os.makedirs(dst_parent)
+
+  if os.path.islink(src_path):
+    copy_link(src_path, dst_path)
+  elif os.path.isfile(src_path):
+    shutil.copyfile(src_path, dst_path)
+
+def copy_link(src_link, dst_link):
+  """Copy the target of a symlink from src_link to dst_link. Do this
+     recursively if the target is also a symlink."""
+  src_dir = os.path.dirname(src_link)
+  dst_dir = os.path.dirname(dst_link)
+
+  target = os.readlink(src_link)
+  force_symlink(target, dst_link)
+
+  # Don't want to edit any files outside dst_dir
+  if target.startswith('/'):
+    return
+
+  src_target = os.path.join(src_dir, target)
+  dst_target = os.path.join(dst_dir, target)
+  copy_path(src_target, dst_target)
 
 def copy_files(src_dir, dst_dir, infile):
   """See module docsting."""
@@ -30,17 +70,7 @@ def copy_files(src_dir, dst_dir, infile):
     src_path = os.path.join(src_dir, filename)
     dst_path = os.path.join(dst_dir, filename)
 
-    dst_parent = os.path.dirname(dst_path)
-    if not os.path.exists(dst_parent):
-      os.makedirs(dst_parent)
-
-    if os.path.islink(src_path):
-      target = os.readlink(src_path)
-      if os.path.exists(dst_path):
-        os.remove(dst_path)
-      os.symlink(target, dst_path)
-    elif os.path.isfile(src_path):
-      shutil.copyfile(src_path, dst_path)
+    copy_path(src_path, dst_path)
     num_lines += 1
 
     now = time.time()
